@@ -1,6 +1,5 @@
 # redalert
 Reporting only "true" workflow alerts from Oozie
-Reporting only "true" workflow alerts from Oozie
 
 Oozie treats a non-zero action value as a failure. When this happens, one possible action is to fail the workflow and notify the user by email as a failure alert. If the data arrives late and the subsequent workflow execution processes the late data, then the last alert becomes informational only or a "false positive". No action is required.
 
