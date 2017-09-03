@@ -1,0 +1,6 @@
+From:	support@budgetnow.ca
+Sent:	Sept-03-17 09:01
+To:	dr.rizz@budgetnow.ca
+Subject:	Problem with Oozie workflow: etlPipeline
+
+Job returned an error; please verify
