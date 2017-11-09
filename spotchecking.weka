@@ -1,0 +1,144 @@
+= define problem =
+- determine threshold, given cluster_type, wf_type, self-healing,days_at_source
+
+= prepare data =
+== data visualization ==
+- derivable from one another: frequency_30d, freq_1d, est_freq_count_per_h~=freq_count_per_h(crontab)
+- highly correlated: frequency_30d, cluster_type
+- redundant?: avg_duration(m). it has be less than frequency
+- days_at_source: missing, from operational db so in years
+
+== data selection ==
+- cluster_type, wf_type, self_healing, days_at_source, threshold
+- what to do with missing days_at_source? is it even relevant
+
+== feature engineering methods ==
+- from frequency_30d to cluster_type
+
+== misc ==
+- categorical attributes: cluster_type, wf_type, self_healing
+
+= spot check algorithms =
+
+
+
+= spot check algorithm =
+== ZeroR ==
+ZeroR predicts class value: 3.3333333333333335
+
+Correlation coefficient                 -0.3352
+Mean absolute error                      1.7023
+Root mean squared error                  2.0164
+Relative absolute error                100      %
+Root relative squared error            100      %
+Total Number of Instances               39     
+
+== LR ==
+Threshold =
+
+      1.2465 * cluster=alterday,5m,hourly,halfhourly,10m,daily,15m,halfday +
+      1.8743 * cluster=5m,hourly,halfhourly,10m,daily,15m,halfday +
+      2.2913 * cluster=15m,halfday +
+     -1.4141 * cluster=halfday +
+      1.5425 * type=housekeeping +
+      2.2659 * Self-healing=yes ,yes +
+      0.0001 * Data@source (days) +
+     -1.6787
+
+Correlation coefficient                  0.8615
+Mean absolute error                      0.7483
+Root mean squared error                  1.0357
+Relative absolute error                 43.9564 %
+Root relative squared error             51.3636 %
+Total Number of Instances               39  
+
+== SMO ==
+SMOreg
+
+weights (not support vectors):
+ -       0.0104 * (normalized) cluster=5m
+ +       0.0333 * (normalized) cluster=10m
+ +       0.3671 * (normalized) cluster=15m
+ +       0.0329 * (normalized) cluster=hourly
+ -       0.0104 * (normalized) cluster=halfhourly
+ +       0.1985 * (normalized) cluster=halfday
+ +       0.1988 * (normalized) cluster=daily
+ -       0.2995 * (normalized) cluster=alterday
+ -       0.5104 * (normalized) cluster=weekly
+ +       0.2115 * (normalized) type=housekeeping
+ -       0.3033 * (normalized) Self-healing=no
+ +       0.1513 * (normalized) Self-healing=yes
+ +       0.1519 * (normalized) Self-healing=yes 
+ +       0.1235 * (normalized) Data@source (days)
+ +       0.3137
+
+Correlation coefficient                  0.8831
+Mean absolute error                      0.5345
+Root mean squared error                  0.9496
+Relative absolute error                 31.4008 %
+Root relative squared error             47.0937 %
+Total Number of Instances               39     
+
+== random forest ==
+weka.classifiers.trees.RandomTree -K 0 -M 1.0 -V 0.001 -S 1 -do-not-check-capabilities
+
+Correlation coefficient                  0.8977
+Mean absolute error                      0.5927
+Root mean squared error                  0.9131
+Relative absolute error                 34.8177 %
+Root relative squared error             45.2836 %
+Total Number of Instances               39    
+
+
+# Linear Regression
+import pandas
+from sklearn import model_selection
+from sklearn.linear_model import LinearRegression
+url = "./housing.data"
+names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']
+dataframe = pandas.read_csv(url, delim_whitespace=True, names=names)
+array = dataframe.values
+X = array[:,0:13]
+Y = array[:,13]
+seed = 7
+kfold = model_selection.KFold(n_splits=10, random_state=seed)
+model = LinearRegression()
+scoring = 'neg_mean_squared_error'
+results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
+print(results.mean())
+
+
+# Linear Regression
+import pandas
+from sklearn import model_selection
+from sklearn.linear_model import LinearRegression
+url = "./alarms.csv"
+names =['workflow','freq_30d','avg_duration_m','est_freq_count_per_h','freq_count_per_h','freq_1d','cluster_type','wf_type','self_healing','days_at_source','threshold']
+df = pandas.read_csv(url, names=names)
+df.dtypes
+
+df["self_healing"].value_counts()
+
+cleanup_nums = {"self_healing":     {"yes ": "yes", nan: "no"}}
+df.replace(cleanup_nums, inplace=True)
+df["self_healing"].value_counts()
+
+df.head()                
+
+
+df["cluster_type"] = df["cluster_type"].astype('category')
+df["wf_type"] = df["wf_type"].astype('category')
+df["self_healing"] = df["self_healing"].astype('category')
+df["days_at_source"] = df["days_at_source"].astype('float64')
+df["threshold"] = df["threshold"].astype('int64')
+df.dtypes
+
+
+array = df.values
+
+
+Y = array[1:,10]
+X = array[1:,6:9]
+
+
+
